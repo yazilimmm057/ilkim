@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>İlkim 🤍 | Beyaz Kalpler</title>
+  <meta name="description" content="İlkim için ekrana tıkladıkça ve basılı tuttukça büyüyen ışıl ışıl beyaz kalpler.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      /* Hafif, ferah ve romantik gece gökyüzü degrade arka planı */
+      background: radial-gradient(circle at 50% 28%, #221c3b 0%, #171329 55%, #0e0c1b 100%);
+      color: #ffffff;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    /* Tek bir optimize edilmiş görsel efekt kanvası (Yıldızlar + Kıvılcımlar) */
+    #fx-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Kalplerin yer alacağı kapsayıcı */
+    #hearts-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Üst Bilgi Başlığı (Mobil dostu cam efekti) */
+    .hud {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 9px 24px;
+      max-width: 90%;
+      text-align: center;
+      background: rgba(30, 24, 48, 0.72);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 9999px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .hud-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #ffffff;
+      text-shadow: 0 0 14px rgba(255, 255, 255, 0.7);
+    }
+
+    .hud-title .heart-icon {
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.9));
+      animation: pulse-heart 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-heart {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+
+    .hud-desc {
+      font-size: 11px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.78);
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 480px) {
+      .hud {
+        border-radius: 24px;
+        padding: 8px 18px;
+        top: 14px;
+      }
+      .hud-title {
+        font-size: 14px;
+      }
+      .hud-desc {
+        font-size: 10.5px;
+        white-space: normal;
+      }
+    }
+
+    /* Kontrol Butonları Paneli */
+    .controls-panel {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px;
+      max-width: 92%;
+      background: rgba(30, 24, 48, 0.72);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 9999px;
+      pointer-events: auto;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .pill-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: rgba(255, 255, 255, 0.9);
+      padding: 6px 13px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .pill-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+    }
+
+    .pill-btn:active {
+      transform: scale(0.96);
+    }
+
+    .pill-btn.active {
+      background: rgba(255, 255, 255, 0.95);
+      color: #120e24;
+      font-weight: 600;
+      border-color: #ffffff;
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.45);
+    }
+
+    .counter-badge {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.8);
+      padding: 0 4px;
+      white-space: nowrap;
+    }
+
+    .counter-num {
+      color: #ffffff;
+      font-weight: 700;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.85);
+    }
+
+    /* Kalp Öğesi Stilleri (GPU Donanım Hızlandırmalı translate3d) */
+    .heart-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      will-change: transform, opacity;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center center;
+    }
+
+    /* Tek katmanlı, mobil dostu, ultra akıcı parlaklık */
+    .heart-svg {
+      overflow: visible;
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.85));
+    }
+
+    .heart-text {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* Basılı tutarken çıkan yumuşak büyüme halkası */
+    .growth-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.55);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+      animation: ripple-out 0.85s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+
+    @keyframes ripple-out {
+      0% {
+        width: 24px;
+        height: 24px;
+        opacity: 0.9;
+        transform: scale(0.4);
+      }
+      100% {
+        width: 120px;
+        height: 120px;
+        opacity: 0;
+        transform: scale(1.8);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Tek ve hafifletilmiş yüksek performanslı görsel efekt kanvası -->
+  <canvas id="fx-canvas"></canvas>
+
+  <!-- Kalpler Katmanı -->
+  <div id="hearts-container"></div>
+
+  <!-- Üst Bilgi Paneli -->
+  <header class="hud" id="hud">
+    <div class="hud-title">
+      <svg class="heart-icon" width="18" height="18" viewBox="0 0 24 24" fill="#ffffff">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      </svg>
+      <span>İlkim 🤍</span>
+    </div>
+    <div class="hud-desc">Ekrana dokun & basılı tut — İlkim için gökyüzüne süzülsün ✨</div>
+  </header>
+
+  <!-- Alt Kontroller & Sayaç -->
+  <footer class="controls-panel">
+    <div class="counter-badge">
+      Kalpler: <span class="counter-num" id="heart-counter">0</span>
+    </div>
+    <button class="pill-btn active" id="btn-sound" title="Ses Efektini Aç/Kapat">
+      <span id="sound-icon">🔔</span> Ses Açık
+    </button>
+  </footer>
+
+  <script>
+    /* ==========================================================================
+       1. SES SENTEZLEYİCİ (Mobil Uyumlu Web Audio API)
+       ========================================================================== */
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          audioCtx = new AudioContext();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playGrowSound(freq) {
+      if (!soundEnabled) return null;
+      try {
+        initAudio();
+        if (!audioCtx) return null;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.035, audioCtx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        return { osc, gain };
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function playReleaseChime(scale) {
+      if (!soundEnabled) return;
+      try {
+        initAudio();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const baseFreq = Math.max(240, 560 - Math.min(scale, 4) * 55);
+        const notes = [baseFreq, baseFreq * 1.25, baseFreq * 1.5, baseFreq * 2.0];
+
+        notes.forEach((f, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+
+          osc.type = i % 2 === 0 ? 'sine' : 'triangle';
+          osc.frequency.setValueAtTime(f, now + i * 0.03);
+
+          gain.gain.setValueAtTime(0, now + i * 0.03);
+          gain.gain.linearRampToValueAtTime(0.06 / (i + 1), now + i * 0.03 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.03 + 0.7);
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          osc.start(now + i * 0.03);
+          osc.stop(now + i * 0.03 + 0.75);
+        });
+      } catch (e) {}
+    }
+
+    /* ==========================================================================
+       2. TELEFONLAR İÇİN HAFİFLETİLMİŞ, 60 FPS ULTRA AKICI KANVAS SİSTEMİ
+       ctx.shadowBlur yerine önbelleklenmiş Glow Sprite kullanarak mobilde ısınmayı
+       ve kasmayı tamamen sıfırlar.
+       ========================================================================== */
+    const canvas = document.getElementById('fx-canvas');
+    const ctx = canvas.getContext('2d', { alpha: true });
+
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const isMobile = window.innerWidth < 768;
+
+    // GPU dostu ışık sprite'ı
+    const glowSprite = document.createElement('canvas');
+    glowSprite.width = 32;
+    glowSprite.height = 32;
+    const gctx = glowSprite.getContext('2d');
+    const radGrad = gctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    radGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    radGrad.addColorStop(0.35, 'rgba(255, 255, 255, 0.75)');
+    radGrad.addColorStop(0.7, 'rgba(255, 255, 255, 0.2)');
+    radGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    gctx.fillStyle = radGrad;
+    gctx.fillRect(0, 0, 32, 32);
+
+    // Arka plan yıldızları
+    const ambientCount = isMobile ? 24 : 36;
+    const ambientStars = [];
+    for (let i = 0; i < ambientCount; i++) {
+      ambientStars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * 1.3 + 0.6,
+        alpha: Math.random() * 0.6 + 0.2,
+        speedX: (Math.random() - 0.5) * 0.15,
+        speedY: -Math.random() * 0.25 - 0.08,
+        pulseAngle: Math.random() * Math.PI * 2,
+        pulseSpeed: Math.random() * 0.02 + 0.01
+      });
+    }
+
+    // Kıvılcım & Parçacık Havuzu
+    const fxParticles = [];
+
+    function spawnHeartBurst(x, y, scale) {
+      const maxCount = isMobile ? 20 : 32;
+      const count = Math.min(maxCount, Math.floor(10 + scale * 5));
+
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = (Math.random() * 3.0 + 1.2) * Math.min(2.0, Math.sqrt(scale));
+        const size = Math.random() * 2.8 + 1.2;
+        const isHeartShape = Math.random() > 0.65;
+
+        fxParticles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: size,
+          alpha: 1,
+          decay: Math.random() * 0.025 + 0.018,
+          isHeart: isHeartShape,
+          rotation: Math.random() * Math.PI * 2,
+          vRot: (Math.random() - 0.5) * 0.1
+        });
+      }
+    }
+
+    function spawnTrailParticle(x, y, scale) {
+      if (fxParticles.length > 45) return;
+      fxParticles.push({
+        x: x + (Math.random() - 0.5) * 14 * scale,
+        y: y + 16 * scale,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: Math.random() * 1.0 + 0.4,
+        size: Math.random() * 1.8 + 0.8,
+        alpha: 0.75,
+        decay: 0.045,
+        isHeart: false,
+        rotation: 0,
+        vRot: 0
+      });
+    }
+
+    /* ==========================================================================
+       3. İLKİM YAZILI KALPLER & BASILI TUTUP BÜYÜTME MEKANİZMASI
+       ========================================================================== */
+    const container = document.getElementById('hearts-container');
+    const counterEl = document.getElementById('heart-counter');
+    let totalHeartCount = 0;
+
+    const activeTouches = new Map();
+    const flyingHearts = [];
+
+    function getHeartSVG() {
+      return `
+        <svg class="heart-svg" viewBox="0 0 32 32" width="60" height="60">
+          <defs>
+            <radialGradient id="heartGrad" cx="30%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="50%" stop-color="#fafaff"/>
+              <stop offset="85%" stop-color="#ebebff"/>
+              <stop offset="100%" stop-color="#d8d8f6"/>
+            </radialGradient>
+          </defs>
+          <path class="heart-path" fill="url(#heartGrad)" d="M16 28.5C15.4 28.5 14.8 28.2 14.4 27.8C8.5 22.4 2 16.5 2 10.3C2 5.7 5.7 2 10.3 2C13 2 15.2 3.2 16 4.6C16.8 3.2 19 2 21.7 2C26.3 2 30 5.7 30 10.3C30 16.5 23.5 22.4 17.6 27.8C17.2 28.2 16.6 28.5 16 28.5Z"/>
+          <!-- İlkim Yazısı -->
+          <text class="heart-text" x="16" y="14.2" font-size="4.2" fill="#231b36" text-anchor="middle">İlkim</text>
+        </svg>
+      `;
+    }
+
+    function createGrowingHeart(pointerId, startX, startY) {
+      // Eğer bu pointer için zaten açık bir kalp varsa önce onu güvenle uçur
+      if (activeTouches.has(pointerId)) {
+        releaseHeart(pointerId);
+      }
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'heart-wrapper';
+      wrapper.innerHTML = getHeartSVG();
+
+      const ripple = document.createElement('div');
+      ripple.className = 'growth-ring';
+      wrapper.appendChild(ripple);
+
+      wrapper.style.transform = `translate3d(${startX}px, ${startY}px, 0) translate(-50%, -50%) scale(0.35)`;
+      container.appendChild(wrapper);
+
+      const startTime = performance.now();
+      const soundData = playGrowSound(260);
+
+      const touchData = {
+        pointerId,
+        x: startX,
+        y: startY,
+        startTime,
+        scale: 0.35,
+        targetScale: 0.35,
+        wrapper,
+        soundData,
+        isHolding: true,
+        maxHoldTimer: null
+      };
+
+      // 12 saniye sonra otomatik bırak (asla ekranda asılı kalmaz)
+      touchData.maxHoldTimer = setTimeout(() => {
+        if (touchData.isHolding) {
+          releaseHeart(pointerId);
+        }
+      }, 12000);
+
+      activeTouches.set(pointerId, touchData);
+    }
+
+    function releaseHeart(pointerId) {
+      let touchData = activeTouches.get(pointerId);
+
+      // Pointer ID uyuşmazlığı durumunda activeTouches'ta kalan tek dokunuşu güvenle kurtar
+      if (!touchData && activeTouches.size === 1) {
+        const [k, v] = activeTouches.entries().next().value;
+        pointerId = k;
+        touchData = v;
+      }
+
+      if (!touchData) return;
+
+      touchData.isHolding = false;
+      if (touchData.maxHoldTimer) clearTimeout(touchData.maxHoldTimer);
+
+      if (touchData.soundData && touchData.soundData.osc) {
+        try {
+          touchData.soundData.gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+          touchData.soundData.osc.stop(audioCtx.currentTime + 0.06);
+        } catch (e) {}
+      }
+
+      const finalScale = Math.max(0.4, touchData.scale);
+      playReleaseChime(finalScale);
+      spawnHeartBurst(touchData.x, touchData.y, finalScale);
+
+      totalHeartCount++;
+      counterEl.innerText = totalHeartCount;
+
+      const ripple = touchData.wrapper.querySelector('.growth-ring');
+      if (ripple) ripple.remove();
+
+      // Uçuş listesine kaydet
+      registerFlyingHeart(touchData.wrapper, touchData.x, touchData.y, finalScale);
+
+      activeTouches.delete(pointerId);
+    }
+
+    /* ==========================================================================
+       4. KALBİN AKICI VE KESİNTİSİZ GÖKYÜZÜNE SÜZÜLÜŞÜ
+       (Asla donmaz, NaN üretmez, 4.5 - 6.5 saniyede zarifçe uçar)
+       ========================================================================== */
+    function registerFlyingHeart(wrapper, startX, startY, scale) {
+      const heartPixelSize = 60 * scale;
+      const targetY = -heartPixelSize - 60;
+      const totalDistance = startY - targetY;
+      // İdeal, akıcı süzülüş süresi: 4.5 - 6.5 saniye
+      const duration = 4500 + Math.min(scale, 4) * 550;
+
+      flyingHearts.push({
+        wrapper,
+        startX,
+        startY,
+        targetY,
+        totalDistance,
+        scale,
+        duration,
+        startTime: performance.now(),
+        createdAt: Date.now(),
+        swayAmplitude: 16 + Math.random() * 20,
+        swaySpeed: 0.0016 + Math.random() * 0.0008,
+        swayPhase: Math.random() * Math.PI * 2,
+        startRot: (Math.random() - 0.5) * 12,
+        lastTrailTime: 0
+      });
+    }
+
+    /* ==========================================================================
+       5. TEK MERKEZİ RENDER MOTORU (Ultra Akıcı & Kesintisiz 60+ FPS)
+       ========================================================================== */
+    function mainRenderLoop() {
+      // Her zaman tutarlı yüksek hassasiyetli saat kullan (NaN hatasını tamamen önler)
+      const currentTime = performance.now();
+
+      // 1. Ekranı temizle
+      ctx.clearRect(0, 0, width, height);
+
+      // 2. Arka Plan Yıldızları
+      for (let i = 0; i < ambientStars.length; i++) {
+        const p = ambientStars[i];
+        p.x += p.speedX;
+        p.y += p.speedY;
+        p.pulseAngle += p.pulseSpeed;
+
+        if (p.y < -10) { p.y = height + 10; p.x = Math.random() * width; }
+        if (p.x < -10) p.x = width + 10;
+        if (p.x > width + 10) p.x = -10;
+
+        const dynamicAlpha = Math.max(0.12, p.alpha + Math.sin(p.pulseAngle) * 0.2);
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${dynamicAlpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        const spriteSize = p.radius * 6;
+        ctx.globalAlpha = dynamicAlpha * 0.5;
+        ctx.drawImage(glowSprite, p.x - spriteSize / 2, p.y - spriteSize / 2, spriteSize, spriteSize);
+        ctx.globalAlpha = 1.0;
+      }
+
+      // 3. Kıvılcım & Işıltı Parçacıkları
+      for (let i = fxParticles.length - 1; i >= 0; i--) {
+        const p = fxParticles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.95;
+        p.vy *= 0.95;
+        p.rotation += p.vRot;
+        p.alpha -= p.decay;
+
+        if (p.alpha <= 0) {
+          fxParticles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+
+        if (p.isHeart) {
+          ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+          const s = p.size * 0.65;
+          ctx.scale(s, s);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.bezierCurveTo(-2, -3, -5, -1, -5, 2);
+          ctx.bezierCurveTo(-5, 5, 0, 7, 0, 9);
+          ctx.bezierCurveTo(0, 7, 5, 5, 5, 2);
+          ctx.bezierCurveTo(5, -1, 2, -3, 0, 0);
+          ctx.fill();
+        } else {
+          const s = p.size * 3.2;
+          ctx.globalAlpha = p.alpha;
+          ctx.drawImage(glowSprite, -s / 2, -s / 2, s, s);
+          ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // 4. Aktif Basılı Tutulan Kalpleri Büyüt
+      activeTouches.forEach((touchData) => {
+        if (!touchData.isHolding) return;
+
+        // Pozitif güvenceli elapsed (asla negatif veya NaN olamaz)
+        const elapsedSec = Math.max(0, (currentTime - touchData.startTime) / 1000);
+        touchData.targetScale = Math.min(5.5, 0.35 + Math.pow(Math.max(0, elapsedSec * 1.8), 1.2));
+
+        touchData.scale += (touchData.targetScale - touchData.scale) * 0.2;
+
+        const pulse = 1 + Math.sin(currentTime * 0.012) * 0.035;
+        const visualScale = touchData.scale * pulse;
+        const angle = Math.sin(currentTime * 0.006) * 3;
+
+        touchData.wrapper.style.transform = `translate3d(${touchData.x.toFixed(1)}px, ${touchData.y.toFixed(1)}px, 0) translate(-50%, -50%) scale(${visualScale.toFixed(3)}) rotate(${angle.toFixed(1)}deg)`;
+
+        if (touchData.soundData && touchData.soundData.osc) {
+          try {
+            const freq = Math.min(620, 260 + touchData.scale * 55);
+            touchData.soundData.osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          } catch (e) {}
+        }
+
+        if (Math.random() < 0.28) {
+          const sparkAngle = Math.random() * Math.PI * 2;
+          const sparkDist = (touchData.scale * 22) + Math.random() * 10;
+          fxParticles.push({
+            x: touchData.x + Math.cos(sparkAngle) * sparkDist,
+            y: touchData.y + Math.sin(sparkAngle) * sparkDist,
+            vx: (Math.random() - 0.5) * 1.2,
+            vy: -Math.random() * 1.2 - 0.4,
+            size: Math.random() * 2 + 0.8,
+            alpha: 0.85,
+            decay: 0.038,
+            isHeart: false,
+            rotation: 0,
+            vRot: 0
+          });
+        }
+      });
+
+      // 5. Uçan Kalpleri Yönet (Sıfır Donma, Sıfır Takılma)
+      for (let i = flyingHearts.length - 1; i >= 0; i--) {
+        const heart = flyingHearts[i];
+
+        // Sıkıca sınırlandırılmış pozitif elapsed ve progress (NaN hatasını %100 engeller)
+        const elapsed = Math.max(0, currentTime - heart.startTime);
+        const progress = Math.min(1, Math.max(0, elapsed / heart.duration));
+
+        // Doğal yumuşak ivmelenme (Matematiksel olarak her zaman geçerli)
+        const easeY = progress * 0.85 + (progress * progress) * 0.15;
+        const currentY = heart.startY - (heart.totalDistance * easeY);
+        const currentX = heart.startX + Math.sin(currentTime * heart.swaySpeed + heart.swayPhase) * heart.swayAmplitude;
+
+        const currentScale = heart.scale * (1 + progress * 0.1);
+        const rot = heart.startRot + Math.sin(currentTime * heart.swaySpeed * 1.3) * 7;
+
+        // Ekranın üst sınırına yaklaşırken (Y < 60) yumuşakça kaybolur
+        let opacity = 1;
+        if (currentY < 60) {
+          const fadeDist = Math.max(1, 60 - heart.targetY);
+          opacity = Math.max(0, Math.min(1, (currentY - heart.targetY) / fadeDist));
+        }
+
+        heart.wrapper.style.opacity = opacity;
+        heart.wrapper.style.transform = `translate3d(${currentX.toFixed(1)}px, ${currentY.toFixed(1)}px, 0) translate(-50%, -50%) scale(${currentScale.toFixed(3)}) rotate(${rot.toFixed(1)}deg)`;
+
+        // Yükselirken dökülen peri tozu
+        if (currentTime - heart.lastTrailTime > 120 && opacity > 0.3) {
+          spawnTrailParticle(currentX, currentY, heart.scale);
+          heart.lastTrailTime = currentTime;
+        }
+
+        // Kesin Temizlik Kriteri: Hedefe vardıysa, süresi bittiyse veya zaman aşımına uğradıysa kaldır
+        const isPastTarget = currentY <= heart.targetY;
+        const isTimedOut = elapsed >= heart.duration;
+        const isExpired = Date.now() - heart.createdAt > (heart.duration + 1500);
+
+        if (progress >= 1 || isPastTarget || isTimedOut || isExpired) {
+          if (heart.wrapper && heart.wrapper.parentNode) {
+            heart.wrapper.parentNode.removeChild(heart.wrapper);
+          }
+          flyingHearts.splice(i, 1);
+        }
+      }
+
+      requestAnimationFrame(mainRenderLoop);
+    }
+
+    // Tekil render döngüsünü başlat
+    requestAnimationFrame(mainRenderLoop);
+
+    /* ==========================================================================
+       6. ETKİLEŞİM DİNLEYİCİLERİ (Hızlı Tıklama & Dokunmatik Koruma)
+       ========================================================================== */
+    window.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.controls-panel')) {
+        return;
+      }
+      initAudio();
+      createGrowingHeart(e.pointerId, e.clientX, e.clientY);
+    }, { passive: true });
+
+    window.addEventListener('pointermove', (e) => {
+      const touchData = activeTouches.get(e.pointerId);
+      if (touchData && touchData.isHolding) {
+        touchData.x += (e.clientX - touchData.x) * 0.35;
+        touchData.y += (e.clientY - touchData.y) * 0.35;
+      }
+    }, { passive: true });
+
+    function releaseAll() {
+      const ids = Array.from(activeTouches.keys());
+      ids.forEach(id => releaseHeart(id));
+    }
+
+    window.addEventListener('pointerup', (e) => releaseHeart(e.pointerId));
+    window.addEventListener('pointercancel', (e) => releaseHeart(e.pointerId));
+    window.addEventListener('mouseup', releaseAll);
+    window.addEventListener('touchend', releaseAll);
+    window.addEventListener('touchcancel', releaseAll);
+    window.addEventListener('blur', releaseAll);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) releaseAll();
+    });
+
+    // Otomatik Temizleyici (Her 4 saniyede bir sahipsiz kalan ögeleri temizler)
+    setInterval(() => {
+      const activeWrappers = new Set();
+      activeTouches.forEach(t => activeWrappers.add(t.wrapper));
+      flyingHearts.forEach(h => activeWrappers.add(h.wrapper));
+
+      const allWrappers = container.querySelectorAll('.heart-wrapper');
+      allWrappers.forEach(w => {
+        if (!activeWrappers.has(w)) {
+          w.remove();
+        }
+      });
+    }, 4000);
+
+    // Pencere boyutu değiştiğinde akıcı güncelleme
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    /* ==========================================================================
+       7. KULLANICI ARAYÜZÜ KONTROLLERİ
+       ========================================================================== */
+    const btnSound = document.getElementById('btn-sound');
+
+    btnSound.addEventListener('click', (e) => {
+      e.stopPropagation();
+      soundEnabled = !soundEnabled;
+      if (soundEnabled) {
+        btnSound.classList.add('active');
+        btnSound.innerHTML = '<span id="sound-icon">🔔</span> Ses Açık';
+        initAudio();
+      } else {
+        btnSound.classList.remove('active');
+        btnSound.innerHTML = '<span id="sound-icon">🔕</span> Ses Kapalı';
+      }
+    });
+  </script>
+</body>
+</html>
